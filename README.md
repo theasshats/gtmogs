@@ -1,5 +1,14 @@
 # GTMOGS - GregTech Modern Ore Generation: Standalone
 
+> **Maintained continuation.** This repository (`theasshats/gtmogs`) is a maintained
+> continuation of [fmbellomy/gtmogs](https://github.com/fmbellomy/gtmogs) as of
+> upstream 1.0.6, kept alive for the
+> [Project Commonwealth](https://github.com/theasshats/project-commonwealth) pack.
+> The license stays LGPL-3.0-only, the modid stays `gtmogs`, and all modified
+> sources are published here with changes stated in commits and release notes.
+> Working branch: `pcmc/main`; releases are tagged `1.0.6-pcmc.N` with main and
+> sources jars attached. Upstream authorship and history are preserved unchanged.
+
 ## An Unfortunate Disclaimer
 After having isolated the ore generation from GT:M I discovered that the KubeJS integration was broken - even in the original 1.21 branch of GT:M.
 I have not been able to restore it in this mod, so to use this mod in your pack you'll have to either fork it and add the ores yourself to `data/worldgen/GTOreVeins.java` or find a way to generate the .json entries for each ore vein yourself.

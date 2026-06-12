@@ -1,0 +1,106 @@
+# Weekly tripwire: verify every reference the current release jar makes into
+# Xaero's World Map / Minimap against the NEWEST 1.21.1 neoforge builds on
+# Modrinth. Catches member deletions (the WM 1.40.0 ModSettings failure mode,
+# theasshats/project-commonwealth#326) before players hit NoSuchFieldError.
+# Real constant-pool verification, not a strings scan — see tools/member_diff.py.
+#
+# Scheduled workflows run from the DEFAULT branch's copy of this file; the job
+# checks out pcmc/main explicitly so every copy executes the same logic.
+name: Xaero drift tripwire
+
+on:
+  schedule:
+    - cron: '17 6 * * 1' # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  tripwire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: pcmc/main
+
+      - name: Resolve and fetch newest Xaero builds from Modrinth
+        id: xaero
+        run: |
+          python3 - << 'PY'
+          import json, os, urllib.parse, urllib.request
+
+          def fetch(url, dest=None):
+              req = urllib.request.Request(
+                  url, headers={"User-Agent": "theasshats/gtmogs xaero-tripwire"})
+              with urllib.request.urlopen(req, timeout=60) as resp:
+                  data = resp.read()
+              if dest:
+                  open(dest, "wb").write(data)
+              return data
+
+          versions = {}
+          query = urllib.parse.urlencode(
+              {"game_versions": '["1.21.1"]', "loaders": '["neoforge"]'})
+          for slug, key in (("xaeros-world-map", "wm"), ("xaeros-minimap", "mm")):
+              listing = json.loads(fetch(
+                  f"https://api.modrinth.com/v2/project/{slug}/version?{query}"))
+              newest = listing[0]  # Modrinth sorts newest-first
+              file = next((f for f in newest["files"] if f.get("primary")),
+                          newest["files"][0])
+              fetch(file["url"], dest=f"{key}.jar")
+              versions[key] = newest["version_number"]
+              print(f"{slug}: {newest['version_number']} ({file['filename']})")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"wm={versions['wm']}\nmm={versions['mm']}\n")
+          PY
+
+      - name: Download current release jar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
+                --jq '[.[] | select(.draft | not)][0].tag_name')
+          echo "current release: $tag"
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'gtmogs-*.jar'
+          rm -f ./*-sources.jar
+          ls gtmogs-*.jar
+
+      - name: Member-level diff
+        id: diff
+        run: |
+          mod=$(ls gtmogs-*.jar)
+          set +e
+          python3 tools/member_diff.py --mod "$mod" --target wm.jar --target mm.jar | tee report.txt
+          echo "code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: File drift issue
+        if: steps.diff.outputs.code != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Xaero drift: $RELEASE_TAG vs WM ${{ steps.xaero.outputs.wm }} / MM ${{ steps.xaero.outputs.mm }}"
+          if gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+               --search "in:title \"$title\"" --json title --jq '.[].title' \
+               | grep -Fxq "$title"; then
+            echo "issue already filed for this version pair"
+            exit 0
+          fi
+          {
+            echo "The weekly tripwire found unresolved references from the current release jar (\`$RELEASE_TAG\`) into the newest Xaero builds on Modrinth."
+            echo
+            echo '```'
+            cat report.txt
+            echo '```'
+            echo
+            echo "Playbook: decouple or re-target the affected integration code (theasshats/project-commonwealth#326 documents the WM 1.40.0 precedent), rebuild, re-verify with \`tools/member_diff.py\`, and ship the next \`1.0.6-pcmc.N\`. Notify project-commonwealth#326 with the release link and sha512."
+          } > body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file body.md
+
+      - name: Fail on drift
+        if: steps.diff.outputs.code != '0'
+        run: |
+          cat report.txt
+          exit 1
