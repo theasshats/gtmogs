@@ -27,6 +27,53 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Localize cursemaven dependencies
+        # cursemaven.com returns 402 from datacenter IPs (GitHub runners
+        # included). Resolve every curse.maven coordinate the build declares
+        # via the CurseForge download API into a local maven layout, then
+        # point the cursemaven repository block at it. Runner-local edit;
+        # the committed repositories.gradle keeps the real cursemaven URL.
+        run: |
+          python3 - << 'PY'
+          import pathlib, re, tomllib, urllib.request
+
+          specs = set()
+          catalog = tomllib.load(open("gradle/forge.versions.toml", "rb"))
+          versions = catalog.get("versions", {})
+          for lib in catalog.get("libraries", {}).values():
+              if not isinstance(lib, dict):
+                  continue
+              module = lib.get("module", "")
+              if not module.startswith("curse.maven:"):
+                  continue
+              version = lib.get("version")
+              if isinstance(version, dict):
+                  version = versions.get(version.get("ref", ""))
+              if version:
+                  specs.add((module.split(":", 1)[1], str(version)))
+          pattern = re.compile(r"curse\.maven:([A-Za-z0-9_-]+):(\d+)")
+          for path in ("dependencies.gradle", "build.gradle"):
+              specs.update(pattern.findall(pathlib.Path(path).read_text()))
+
+          for artifact, file_id in sorted(specs):
+              project = artifact.rsplit("-", 1)[1]
+              base = pathlib.Path(f"localmaven/curse/maven/{artifact}/{file_id}")
+              base.mkdir(parents=True, exist_ok=True)
+              url = f"https://www.curseforge.com/api/v1/mods/{project}/files/{file_id}/download"
+              req = urllib.request.Request(url, headers={"User-Agent": "theasshats/gtmogs build"})
+              with urllib.request.urlopen(req, timeout=120) as resp:
+                  (base / f"{artifact}-{file_id}.jar").write_bytes(resp.read())
+              (base / f"{artifact}-{file_id}.pom").write_text(
+                  '<?xml version="1.0" encoding="UTF-8"?>\n'
+                  '<project xmlns="http://maven.apache.org/POM/4.0.0">'
+                  '<modelVersion>4.0.0</modelVersion>'
+                  f'<groupId>curse.maven</groupId><artifactId>{artifact}</artifactId>'
+                  f'<version>{file_id}</version><packaging>jar</packaging></project>\n')
+              print(f"localized curse.maven:{artifact}:{file_id}")
+          PY
+          sed -i 's|url = "https://cursemaven.com/"|url = "file://'"$GITHUB_WORKSPACE"'/localmaven/"|' gradle/scripts/repositories.gradle
+          grep -n "localmaven" gradle/scripts/repositories.gradle
+
       - name: Build
         run: ./gradlew build -x test --warning-mode none
 
