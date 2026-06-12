@@ -24,3 +24,6 @@ src/generated/
 *.DS_Store
 
 qodana.yaml
+localmaven/
+build/
+.gradle/

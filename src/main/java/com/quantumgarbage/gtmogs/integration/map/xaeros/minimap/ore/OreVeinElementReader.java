@@ -42,12 +42,13 @@ public class OreVeinElementReader extends MinimapElementReader<OreVeinElement, O
 
     @Override
     public int getInteractionBoxTop(OreVeinElement element, OreVeinElementContext context, float partialTicks) {
-        return WorldMap.settings.waypointBackgrounds ? -41 : -12;
+        // WM 1.40.0 removed ModSettings.waypointBackgrounds; use the no-background hitbox.
+        return -12;
     }
 
     @Override
     public int getInteractionBoxBottom(OreVeinElement element, OreVeinElementContext context, float partialTicks) {
-        return WorldMap.settings.waypointBackgrounds ? 0 : 12;
+        return 12;
     }
 
     @Override

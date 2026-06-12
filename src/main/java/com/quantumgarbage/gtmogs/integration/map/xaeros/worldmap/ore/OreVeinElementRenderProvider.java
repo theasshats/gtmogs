@@ -18,16 +18,16 @@ public class OreVeinElementRenderProvider extends MapElementRenderProvider<OreVe
     public OreVeinElementRenderProvider() {}
 
     public void begin(int location, OreVeinElementContext context) {
-        if (WorldMap.settings.waypoints) {
-            ResourceKey<Level> currentDim = Minecraft.getInstance().level.dimension();
-            this.iterator = XaerosRenderer.oreElements.row(currentDim).values()
-                    .stream()
-                    .map(element -> new OreVeinElement(element.getVein(), element.getName()))
-                    .iterator();
-            context.worldmapWaypointsScale = WorldMap.settings.worldmapWaypointsScale;
-        } else {
-            this.iterator = null;
-        }
+        // Xaero's World Map 1.40.0 removed ModSettings.waypoints and
+        // ModSettings.worldmapWaypointsScale (waypoint settings left the world map).
+        // The vein layer has its own visibility toggle, so render unconditionally
+        // and use a fixed 1.0 element scale.
+        ResourceKey<Level> currentDim = Minecraft.getInstance().level.dimension();
+        this.iterator = XaerosRenderer.oreElements.row(currentDim).values()
+                .stream()
+                .map(element -> new OreVeinElement(element.getVein(), element.getName()))
+                .iterator();
+        context.worldmapWaypointsScale = 1.0f;
     }
 
     public boolean hasNext(int location, OreVeinElementContext context) {

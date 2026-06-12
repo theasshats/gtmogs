@@ -19,12 +19,10 @@ public class OreVeinElementRenderProvider extends MinimapElementRenderProvider<O
 
     @Override
     public void begin(MinimapElementRenderLocation location, OreVeinElementContext context) {
-        if (WorldMap.settings.waypoints) {
-            ResourceKey<Level> currentDim = Minecraft.getInstance().level.dimension();
-            this.iterator = XaerosRenderer.oreElements.row(currentDim).values().iterator();
-        } else {
-            this.iterator = null;
-        }
+        // Xaero's World Map 1.40.0 removed ModSettings.waypoints; the vein layer has
+        // its own visibility toggle, so render unconditionally.
+        ResourceKey<Level> currentDim = Minecraft.getInstance().level.dimension();
+        this.iterator = XaerosRenderer.oreElements.row(currentDim).values().iterator();
     }
 
     @Override
