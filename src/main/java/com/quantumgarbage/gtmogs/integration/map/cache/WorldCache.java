@@ -29,6 +29,13 @@ public abstract class WorldCache {
         return new ArrayList<>();
     }
 
+    public List<GeneratedVeinMetadata> getAllVeins(ResourceKey<Level> dim) {
+        if (cache.containsKey(dim)) {
+            return cache.get(dim).getAllVeins();
+        }
+        return new ArrayList<>();
+    }
+
     public List<GeneratedVeinMetadata> getVeinsInArea(ResourceKey<Level> dim, int[] bounds) {
         if (cache.containsKey(dim)) {
             return cache.get(dim).getVeinsInBounds(

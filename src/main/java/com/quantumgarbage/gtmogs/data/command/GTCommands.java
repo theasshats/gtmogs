@@ -19,13 +19,18 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
-import com.quantumgarbage.gtmogs.GTMOGS;
 import com.quantumgarbage.gtmogs.api.registry.GTRegistries;
 import com.quantumgarbage.gtmogs.api.worldgen.OreVeinDefinition;
 import com.quantumgarbage.gtmogs.api.worldgen.ores.GeneratedVeinMetadata;
 import com.quantumgarbage.gtmogs.api.worldgen.ores.OreGenerator;
 import com.quantumgarbage.gtmogs.api.worldgen.ores.OrePlacer;
 import com.quantumgarbage.gtmogs.core.mixins.ResourceKeyArgumentAccessor;
+import com.quantumgarbage.gtmogs.integration.map.cache.server.ServerCache;
+
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static net.minecraft.commands.Commands.*;
 
@@ -48,9 +53,52 @@ public class GTCommands {
                                 .then(argument("position", BlockPosArgument.blockPos())
                                         .executes(context -> {
                                             return GTCommands.placeVein(context, BlockPosArgument.getBlockPos(context, "position"));
-                                        })))));
+                                        }))))
+                .then(literal("census")
+                        .requires(ctx -> ctx.hasPermission(LEVEL_GAMEMASTERS))
+                        .executes(GTCommands::veinCensus)));
     }
     // spotless:on
+
+    /**
+     * Aggregates the persisted placed-vein records of the source's dimension
+     * (the same data prospecting reads) into per-vein counts, so pack
+     * calibration does not need to grep debug.log.
+     */
+    private static int veinCensus(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getLevel();
+        String dimension = level.dimension().location().toString();
+        List<GeneratedVeinMetadata> veins = ServerCache.instance.getAllVeins(level.dimension());
+        if (veins.isEmpty()) {
+            context.getSource().sendSuccess(
+                    () -> Component.literal("No veins recorded for " + dimension + " yet."), false);
+            return 0;
+        }
+
+        Map<String, int[]> counts = new HashMap<>();
+        for (GeneratedVeinMetadata vein : veins) {
+            String id = vein.definition().unwrapKey()
+                    .map(key -> key.location().toString())
+                    .orElse("(unregistered)");
+            int[] tally = counts.computeIfAbsent(id, unused -> new int[2]);
+            tally[0]++;
+            if (vein.depleted()) tally[1]++;
+        }
+
+        StringBuilder report = new StringBuilder("Vein census for " + dimension + ": " +
+                veins.size() + " veins, " + counts.size() + " types");
+        counts.entrySet().stream()
+                .sorted(Comparator.<Map.Entry<String, int[]>>comparingInt(e -> -e.getValue()[0])
+                        .thenComparing(Map.Entry::getKey))
+                .forEach(e -> {
+                    report.append("\n  ").append(e.getKey()).append(": ").append(e.getValue()[0]);
+                    if (e.getValue()[1] > 0) {
+                        report.append(" (").append(e.getValue()[1]).append(" depleted)");
+                    }
+                });
+        context.getSource().sendSuccess(() -> Component.literal(report.toString()), false);
+        return veins.size();
+    }
 
     private static int placeVein(CommandContext<CommandSourceStack> context,
                                  BlockPos sourcePos) throws CommandSyntaxException {

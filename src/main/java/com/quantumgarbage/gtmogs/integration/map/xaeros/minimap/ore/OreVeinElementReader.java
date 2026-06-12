@@ -1,12 +1,11 @@
 package com.quantumgarbage.gtmogs.integration.map.xaeros.minimap.ore;
 
+import net.minecraft.client.Minecraft;
+
 import com.quantumgarbage.gtmogs.config.ConfigHolder;
 import com.quantumgarbage.gtmogs.integration.map.GroupingMapRenderer;
 import com.quantumgarbage.gtmogs.integration.map.MapIntegrationUtils;
-import net.minecraft.client.Minecraft;
-
 import xaero.hud.minimap.element.render.MinimapElementReader;
-import xaero.map.WorldMap;
 
 public class OreVeinElementReader extends MinimapElementReader<OreVeinElement, OreVeinElementContext> {
 

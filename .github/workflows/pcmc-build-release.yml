@@ -1,0 +1,89 @@
+# Builds pcmc/main and publishes the release for the version in
+# gradle.properties: gradle build, member-level Xaero verification
+# (tools/member_diff.py vs the newest Modrinth builds — the gate that
+# would have caught the WM 1.40.0 breakage), then a prerelease with
+# main + sources jars and the sha512 in the body. Notes come from
+# docs/releases/<version>.md. Dispatch manually; refuses to overwrite
+# an existing tag.
+name: PCMC build and release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: pcmc/main
+          fetch-depth: 0 # spotless ratchets from origin/1.21
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build
+        run: ./gradlew build -x test --warning-mode none
+
+      - name: Fetch newest Xaero builds from Modrinth
+        run: |
+          python3 - << 'PY'
+          import json, urllib.parse, urllib.request
+
+          def fetch(url, dest=None):
+              req = urllib.request.Request(
+                  url, headers={"User-Agent": "theasshats/gtmogs release-verify"})
+              with urllib.request.urlopen(req, timeout=60) as resp:
+                  data = resp.read()
+              if dest:
+                  open(dest, "wb").write(data)
+              return data
+
+          query = urllib.parse.urlencode(
+              {"game_versions": '["1.21.1"]', "loaders": '["neoforge"]'})
+          for slug, key in (("xaeros-world-map", "wm"), ("xaeros-minimap", "mm")):
+              listing = json.loads(fetch(
+                  f"https://api.modrinth.com/v2/project/{slug}/version?{query}"))
+              newest = listing[0]
+              file = next((f for f in newest["files"] if f.get("primary")),
+                          newest["files"][0])
+              fetch(file["url"], dest=f"{key}.jar")
+              print(f"{slug}: {newest['version_number']}")
+          PY
+
+      - name: Verify Xaero references (member-level)
+        run: |
+          mod=$(ls build/libs/gtmogs-*.jar | grep -v -- -sources)
+          python3 tools/member_diff.py --mod "$mod" --target wm.jar --target mm.jar
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's/^mod_version = //p' gradle.properties)
+          main="build/libs/gtmogs-1.21.1-$version.jar"
+          sources="build/libs/gtmogs-1.21.1-$version-sources.jar"
+          ls -la "$main" "$sources"
+          if gh release view "$version" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "release $version already exists — bump mod_version first" >&2
+            exit 1
+          fi
+          sha=$(sha512sum "$main" | cut -d' ' -f1)
+          {
+            cat "docs/releases/$version.md"
+            echo
+            echo "---"
+            echo "\`$(basename "$main")\` SHA-512: \`$sha\`"
+          } > body.md
+          gh release create "$version" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target pcmc/main \
+            --title "$version" \
+            --prerelease \
+            --notes-file body.md \
+            "$main" "$sources"

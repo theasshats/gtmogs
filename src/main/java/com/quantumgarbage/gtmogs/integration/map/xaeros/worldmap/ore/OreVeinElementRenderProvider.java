@@ -1,12 +1,10 @@
 package com.quantumgarbage.gtmogs.integration.map.xaeros.worldmap.ore;
 
-
-import com.quantumgarbage.gtmogs.integration.map.xaeros.XaerosRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 
-import xaero.map.WorldMap;
+import com.quantumgarbage.gtmogs.integration.map.xaeros.XaerosRenderer;
 import xaero.map.element.MapElementRenderProvider;
 
 import java.util.Iterator;

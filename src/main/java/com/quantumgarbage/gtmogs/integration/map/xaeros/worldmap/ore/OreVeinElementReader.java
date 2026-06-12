@@ -1,15 +1,13 @@
 package com.quantumgarbage.gtmogs.integration.map.xaeros.worldmap.ore;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 import com.quantumgarbage.gtmogs.config.ConfigHolder;
 import com.quantumgarbage.gtmogs.integration.map.GroupingMapRenderer;
 import com.quantumgarbage.gtmogs.integration.map.MapIntegrationUtils;
 import com.quantumgarbage.gtmogs.integration.map.layer.builtin.OreRenderLayer;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-
-import xaero.map.WorldMap;
 import xaero.map.element.MapElementReader;
 import xaero.map.gui.CursorBox;
 import xaero.map.gui.IRightClickableElement;
@@ -20,7 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class OreVeinElementReader extends
-        MapElementReader<OreVeinElement, OreVeinElementContext, OreVeinElementRenderer> {
+                                  MapElementReader<OreVeinElement, OreVeinElementContext, OreVeinElementRenderer> {
 
     @Override
     public boolean isHidden(OreVeinElement element, OreVeinElementContext context) {

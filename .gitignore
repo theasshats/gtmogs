@@ -27,3 +27,4 @@ qodana.yaml
 localmaven/
 build/
 .gradle/
+__pycache__/

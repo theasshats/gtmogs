@@ -53,6 +53,14 @@ public class DimensionCache {
         }
     }
 
+    public List<GeneratedVeinMetadata> getAllVeins() {
+        List<GeneratedVeinMetadata> found = new ArrayList<>();
+        for (GridCache grid : cache.values()) {
+            found.addAll(grid.getVeins());
+        }
+        return found;
+    }
+
     public List<GeneratedVeinMetadata> getNearbyVeins(BlockPos pos, int blockRadius) {
         return getVeinsInBounds(pos.offset(-blockRadius, 0, -blockRadius), pos.offset(blockRadius, 0, blockRadius));
     }
