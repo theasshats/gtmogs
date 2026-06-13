@@ -12,6 +12,7 @@ import com.quantumgarbage.gtmogs.GTMOGS;
 import com.quantumgarbage.gtmogs.api.worldgen.OreVeinDefinition;
 import com.quantumgarbage.gtmogs.api.worldgen.ores.GeneratedVeinMetadata;
 import com.quantumgarbage.gtmogs.common.network.packets.prospecting.SPacketProspectOre;
+import com.quantumgarbage.gtmogs.config.ConfigHolder;
 import com.quantumgarbage.gtmogs.integration.map.cache.DimensionCache;
 import com.quantumgarbage.gtmogs.integration.map.cache.WorldCache;
 
@@ -64,6 +65,11 @@ public class ServerCache extends WorldCache {
                     Objects.requireNonNull(GTMOGS.getMinecraftServer().getLevel(dim)).getBlockState(origin))) {
                 foundVeins.add(nearbyVein);
             }
+        }
+        if (ConfigHolder.INSTANCE.dev.debug) {
+            GTMOGS.LOGGER.debug(
+                    "Prospect by ore at {}: {} recorded vein(s) within {} blocks, {} matching the clicked block",
+                    origin.toShortString(), nearbyVeins.size(), radius, foundVeins.size());
         }
         PacketDistributor.sendToPlayer(player, new SPacketProspectOre(dim, foundVeins));
     }

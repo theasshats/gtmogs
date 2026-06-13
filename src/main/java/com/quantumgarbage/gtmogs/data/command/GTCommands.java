@@ -9,12 +9,16 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.BulkSectionAccess;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.templatesystem.AlwaysTrueTest;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
@@ -24,7 +28,10 @@ import com.quantumgarbage.gtmogs.api.worldgen.OreVeinDefinition;
 import com.quantumgarbage.gtmogs.api.worldgen.ores.GeneratedVeinMetadata;
 import com.quantumgarbage.gtmogs.api.worldgen.ores.OreGenerator;
 import com.quantumgarbage.gtmogs.api.worldgen.ores.OrePlacer;
+import com.quantumgarbage.gtmogs.common.network.packets.prospecting.SPacketProspectOre;
+import com.quantumgarbage.gtmogs.config.ConfigHolder;
 import com.quantumgarbage.gtmogs.core.mixins.ResourceKeyArgumentAccessor;
+import com.quantumgarbage.gtmogs.data.worldgen.GTOreVeins;
 import com.quantumgarbage.gtmogs.integration.map.cache.server.ServerCache;
 
 import java.util.Comparator;
@@ -56,9 +63,48 @@ public class GTCommands {
                                         }))))
                 .then(literal("census")
                         .requires(ctx -> ctx.hasPermission(LEVEL_GAMEMASTERS))
-                        .executes(GTCommands::veinCensus)));
+                        .executes(GTCommands::veinCensus))
+                .then(literal("prospect")
+                        .requires(ctx -> ctx.hasPermission(LEVEL_GAMEMASTERS))
+                        .executes(context -> GTCommands.prospectDebug(context,
+                                ConfigHolder.INSTANCE.compat.minimap.oreBlockProspectRange))
+                        .then(argument("radius", IntegerArgumentType.integer(1, 256))
+                                .executes(context -> GTCommands.prospectDebug(context,
+                                        IntegerArgumentType.getInteger(context, "radius"))))));
     }
     // spotless:on
+
+    /**
+     * Diagnostic prospect: sends every recorded vein near the player to their
+     * map, bypassing the right-click path (vein-ore block check, block-state
+     * match), and reports each stage's numbers so a silent prospect failure
+     * can be localized: ore-set size, cache lookup count, and how many veins
+     * the packet's above-surface filter drops.
+     */
+    private static int prospectDebug(CommandContext<CommandSourceStack> context,
+                                     int radius) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos pos = player.blockPosition();
+
+        List<GeneratedVeinMetadata> nearby = ServerCache.instance.getNearbyVeins(level.dimension(), pos, radius);
+        int aboveSurface = 0;
+        for (GeneratedVeinMetadata vein : nearby) {
+            int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
+                    vein.center().getX(), vein.center().getZ());
+            if (vein.center().getY() + 10 >= surface) aboveSurface++;
+        }
+        if (!nearby.isEmpty()) {
+            PacketDistributor.sendToPlayer(player, new SPacketProspectOre(level.dimension(), nearby));
+        }
+        String message = "Prospect debug at " + pos.toShortString() + ": " +
+                GTOreVeins.getVeinOres().size() + " vein-ore blocks registered; " +
+                nearby.size() + " recorded vein(s) within " + radius + " blocks; sent " +
+                (nearby.size() - aboveSurface) + " to your map (" + aboveSurface +
+                " filtered as above-surface).";
+        context.getSource().sendSuccess(() -> Component.literal(message), false);
+        return nearby.size();
+    }
 
     /**
      * Aggregates the persisted placed-vein records of the source's dimension
@@ -125,6 +171,10 @@ public class GTCommands {
                 placer.placeVein(pos, random, access, generated.get(), AlwaysTrueTest.INSTANCE);
                 level.getChunk(pos.x, pos.z).setUnsaved(true);
             }
+            // record it like worldgen does, so the placed vein prospects and shows in the census
+            int gridSize = ConfigHolder.INSTANCE.worldgen.oreVeins.oreVeinGridSize;
+            ServerCache.instance.addVein(level.dimension(),
+                    Math.floorDiv(chunkPos.x, gridSize), Math.floorDiv(chunkPos.z, gridSize), metadata);
             context.getSource().sendSuccess(() -> Component.translatable("command.gtmogs.place_vein.success",
                     id.toString(), sourcePos.toString()), true);
         }

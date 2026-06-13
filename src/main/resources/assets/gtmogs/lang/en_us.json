@@ -3,6 +3,7 @@
   "command.gtmogs.place_vein.failure": "Failed to place vein %s at position %s",
   "command.gtmogs.place_vein.success": "Placed vein %s at position %s",
   "command.gtmogs.share_prospection_data.notification": "%s is sharing prospecting data with you!",
+  "message.gtmogs.new_veins.name": "Prospected new vein: %s",
   "gtmogs.button.bedrock_fluids": "Show Bedrock Fluid Veins",
   "gtmogs.button.hide_depleted": "Hide Depleted Veins",
   "gtmogs.button.ore_veins": "Show GT Ore Veins",
