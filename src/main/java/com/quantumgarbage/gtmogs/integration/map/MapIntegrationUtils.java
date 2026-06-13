@@ -22,9 +22,22 @@ public class MapIntegrationUtils {
 
     public static TextureAtlasSprite getFirstBlockFace(Block b) {
         RandomSource random = RandomSource.create();
-        var sprite = Minecraft.getInstance().getBlockRenderer().getBlockModel(b.defaultBlockState())
-                .getQuads(b.defaultBlockState(), Direction.NORTH, random).getFirst().getSprite();
-        return sprite;
+        var state = b.defaultBlockState();
+        var model = Minecraft.getInstance().getBlockRenderer().getBlockModel(state);
+        // A block model's quads can live under the general (null) direction
+        // (cross models, custom-parent ores, non-solid render types) OR under a
+        // cull face. Asking only for NORTH and calling getFirst() throws
+        // NoSuchElementException for any model that has no north-face quad, which
+        // crashed the map marker render. Try general quads, then every face, then
+        // fall back to the model's particle sprite (always present).
+        var quads = model.getQuads(state, null, random);
+        if (quads.isEmpty()) {
+            for (Direction dir : Direction.values()) {
+                quads = model.getQuads(state, dir, random);
+                if (!quads.isEmpty()) break;
+            }
+        }
+        return quads.isEmpty() ? model.getParticleIcon() : quads.getFirst().getSprite();
     }
 
     public static String veinCenter(GeneratedVeinMetadata vein) {
