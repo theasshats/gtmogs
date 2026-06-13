@@ -1,8 +1,12 @@
-# Weekly tripwire: verify every reference the current release jar makes into
-# Xaero's World Map / Minimap against the NEWEST 1.21.1 neoforge builds on
-# Modrinth. Catches member deletions (the WM 1.40.0 ModSettings failure mode,
-# theasshats/project-commonwealth#326) before players hit NoSuchFieldError.
-# Real constant-pool verification, not a strings scan — see tools/member_diff.py.
+# Weekly tripwire: verify the current release jar against the NEWEST 1.21.1
+# neoforge Xaero builds on Modrinth, two ways:
+#   - tools/member_diff.py: every constant-pool reference into xaero/* resolves
+#     (catches member deletions — the WM 1.40.0 ModSettings failure, #326).
+#   - tools/mixin_targets.py: every Xaero mixin's injection targets exist
+#     (@Mixin class, @Inject/@At/@Shadow targets — the registration path the
+#     member diff can't see, since those are named by string, not by ref).
+# Either failing files one issue and fails the job. Real bytecode parsing, not
+# a strings scan.
 #
 # Scheduled workflows run from the DEFAULT branch's copy of this file; the job
 # checks out pcmc/main explicitly so every copy executes the same logic.
@@ -68,13 +72,24 @@ jobs:
           rm -f ./*-sources.jar
           ls gtmogs-*.jar
 
-      - name: Member-level diff
+      - name: Member-level diff + mixin-target check
         id: diff
         run: |
           mod=$(ls gtmogs-*.jar)
           set +e
-          python3 tools/member_diff.py --mod "$mod" --target wm.jar --target mm.jar | tee report.txt
-          echo "code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          echo "=== Member-level reference diff ===" | tee report.txt
+          python3 tools/member_diff.py --mod "$mod" --target wm.jar --target mm.jar 2>&1 | tee -a report.txt
+          member=${PIPESTATUS[0]}
+          echo "" | tee -a report.txt
+          echo "=== Mixin-target check ===" | tee -a report.txt
+          python3 tools/mixin_targets.py --mod "$mod" --target wm.jar --target mm.jar 2>&1 | tee -a report.txt
+          mixin=${PIPESTATUS[0]}
+          # fail (1) if either reports drift; 2 from either is a tool/input error
+          code=0
+          [ "$member" != 0 ] && code=$member
+          [ "$mixin" != 0 ] && code=$mixin
+          echo "member=$member mixin=$mixin -> code=$code"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
 
       - name: File drift issue
         if: steps.diff.outputs.code != '0'
@@ -89,13 +104,13 @@ jobs:
             exit 0
           fi
           {
-            echo "The weekly tripwire found unresolved references from the current release jar (\`$RELEASE_TAG\`) into the newest Xaero builds on Modrinth."
+            echo "The weekly tripwire found a mismatch between the current release jar (\`$RELEASE_TAG\`) and the newest Xaero builds on Modrinth — a removed/renamed member reference and/or a moved mixin injection target."
             echo
             echo '```'
             cat report.txt
             echo '```'
             echo
-            echo "Playbook: decouple or re-target the affected integration code (theasshats/project-commonwealth#326 documents the WM 1.40.0 precedent), rebuild, re-verify with \`tools/member_diff.py\`, and ship the next \`1.0.6-pcmc.N\`. Notify project-commonwealth#326 with the release link and sha512."
+            echo "Playbook: decouple or re-target the affected integration code (theasshats/project-commonwealth#326 documents the WM 1.40.0 precedent), rebuild, re-verify with \`tools/member_diff.py\` and \`tools/mixin_targets.py\`, and ship the next \`1.0.6-pcmc.N\`. Notify project-commonwealth#326 with the release link and sha512."
           } > body.md
           gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file body.md
 
