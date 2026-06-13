@@ -9,7 +9,10 @@
       "ftbchunks.FTBChunksClientMixin",
       "ftbchunks.LargeMapScreenMixin",
       "ftbchunks.RegionMapPanelMixin",
-      "neoforge.BakedModelWrapperAccessor"
+      "neoforge.BakedModelWrapperAccessor",
+      "xaerominimap.MinimapFBORendererMixin",
+      "xaeroworldmap.GuiMapMixin",
+      "xaeroworldmap.MapElementRenderHandlerBuilderMixin"
     ],
     "mixins": [
       "ChunkGeneratorMixin",

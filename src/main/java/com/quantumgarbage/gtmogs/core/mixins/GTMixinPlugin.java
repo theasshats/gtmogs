@@ -22,7 +22,7 @@ public class GTMixinPlugin implements IMixinConfigPlugin {
         return null;
     }
 
-    private static final String MIXIN_PACKAGE = "com.quantumgarbagee.gtmogs.core.mixins.";
+    private static final String MIXIN_PACKAGE = "com.quantumgarbage.gtmogs.core.mixins.";
     private static final Map<String, String> MOD_COMPAT_MIXINS = new HashMap<>();
 
     static {

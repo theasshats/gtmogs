@@ -30,8 +30,9 @@ iris = "1.8.8+1.21.1-neoforge"
 modernfix = "4SPHwiDB" # 5.24.3+mc1.21.1
 
 ## cursemaven ##
-xaerosWorldMap = "6212662"
-xaerosMinimap = "6306189"
+xaerosWorldMap = "1.40.16"
+xaerosMinimap = "25.3.13"
+xaerosLib = "1.1.0"
 journeyMap = "6383889"
 spark = "6225208"
 observable = "5733591"
@@ -74,8 +75,9 @@ sodium              = { module = "maven.modrinth:sodium", version.ref = "sodium"
 iris                = { module = "maven.modrinth:iris", version.ref = "iris" }
 modernfix           = { module = "maven.modrinth:modernfix", version.ref = "modernfix" }
 
-xaerosworldmap      = { module = "curse.maven:xaeros-world-map-317780", version.ref = "xaerosWorldMap" }
-xaerosminimap       = { module = "curse.maven:xaeros-minimap-263420", version.ref = "xaerosMinimap" }
+xaerosworldmap      = { module = "xaero.map:xaeroworldmap-neoforge-1.21.1", version.ref = "xaerosWorldMap" }
+xaerosminimap       = { module = "xaero.minimap:xaerominimap-neoforge-1.21.1", version.ref = "xaerosMinimap" }
+xaeroslib           = { module = "xaero.lib:xaerolib-neoforge-1.21.1", version.ref = "xaerosLib" }
 journeymap-forge    = { module = "curse.maven:journeymap-32274", version.ref = "journeyMap" }
 spark               = { module = "curse.maven:spark-361579", version.ref = "spark" }
 observable          = { module = "curse.maven:observable-509575", version.ref = "observable" }
