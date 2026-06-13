@@ -194,6 +194,28 @@ public class ConfigHolder {
                     "Default: 2048 (requires restarting the server / re-opening the world)"
             })
             public int oreIndicatorChunkCacheSize = 2048;
+            @Configurable
+            @Configurable.Comment({
+                    "Decide vein eligibility from the column's surface biome instead of the biome at the vein center's y=0.",
+                    "By default the vein lottery samples the 3D noise biome at y=0, so cave-biome pockets there (dripstone,",
+                    "lush caves, deep dark) veto or capture a grid cell even when the vein body generates far above or below",
+                    "them. With this enabled the biome is sampled at surfaceBiomeSampleY instead, so the ore under a mountain",
+                    "is the mountain's ore.",
+                    "Note: while enabled, cave-biome entries in vein biome tags no longer match anything.",
+                    "Default: false (vanilla GTMOGS behavior)"
+            })
+            public boolean sampleSurfaceBiome = false;
+            @Configurable
+            @Configurable.Range(min = -2032, max = 2031)
+            @Configurable.Comment({
+                    "The fixed block y at which vein eligibility samples the biome when sampleSurfaceBiome is enabled.",
+                    "Pick a height above your terrain: cave biomes are placed by depth below the LOCAL surface, so a value",
+                    "that sits inside tall terrain still reads as caves (with tall worldgen like Terralith, y=100 is inside",
+                    "many mountains; 200 clears nearly everything). Very high values can instead catch floating sky biomes",
+                    "(e.g. Terralith skylands) where those generate.",
+                    "Default: 200"
+            })
+            public int surfaceBiomeSampleY = 200;
         }
     }
 

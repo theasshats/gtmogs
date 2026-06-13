@@ -104,11 +104,20 @@ public class OreGenerator {
 
     private Stream<Holder<OreVeinDefinition>> getEntries(WorldGenLevel level, BlockPos veinCenter,
                                                          XoroshiroRandomSource random) {
+        var oreVeinConfig = ConfigHolder.INSTANCE.worldgen.oreVeins;
+        // The vein center's y is 0 (see OreVeinUtil.getVeinCenter), so eligibility is
+        // decided by the 3D noise biome at y 0..3 — cave-biome pockets there veto or
+        // capture the cell regardless of where the vein body generates. With
+        // sampleSurfaceBiome on, sample at a fixed high y so the column's surface
+        // biome decides instead. A fixed y (not a heightmap) is deliberate:
+        // neighbor-chunk heightmaps are unavailable/unstable during worldgen, while
+        // the noise biome source is deterministic at any height.
+        int quartY = QuartPos.fromBlock(oreVeinConfig.sampleSurfaceBiome ?
+                oreVeinConfig.surfaceBiomeSampleY : veinCenter.getY());
         return WorldGeneratorUtils.WORLD_GEN_LAYERS.values().stream()
                 .filter(layer -> layer.isApplicableForLevel(level.getLevel().dimension()))
                 .map(layer -> {
                     int quartX = QuartPos.fromBlock(veinCenter.getX());
-                    int quartY = QuartPos.fromBlock(veinCenter.getY());
                     int quartZ = QuartPos.fromBlock(veinCenter.getZ());
                     return getEntry(level, level.getUncachedNoiseBiome(quartX, quartY, quartZ), random, layer);
                 })
