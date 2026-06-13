@@ -35,7 +35,9 @@ public class CommonEventListener {
         GTCommands.register(event.getDispatcher(), event.getBuildContext());
     }
 
-    @SubscribeEvent
+    // receiveCanceled: prospecting is read-only, so a claim/protection mod
+    // canceling the block interaction should not suppress it.
+    @SubscribeEvent(receiveCanceled = true)
     public static void onRightClick(PlayerInteractEvent.RightClickBlock event) {
         Level level = event.getLevel();
 

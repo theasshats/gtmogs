@@ -1,6 +1,7 @@
 package com.quantumgarbage.gtmogs.integration.map.cache.server;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -70,6 +71,13 @@ public class ServerCache extends WorldCache {
             GTMOGS.LOGGER.debug(
                     "Prospect by ore at {}: {} recorded vein(s) within {} blocks, {} matching the clicked block",
                     origin.toShortString(), nearbyVeins.size(), radius, foundVeins.size());
+        }
+        if (foundVeins.isEmpty()) {
+            // Without feedback, clicking an ore with no vein record (e.g. a scattered
+            // small-ore blob) is indistinguishable from prospecting being broken.
+            player.displayClientMessage(
+                    Component.translatable("message.gtmogs.prospect.none", radius), true);
+            return;
         }
         PacketDistributor.sendToPlayer(player, new SPacketProspectOre(dim, foundVeins));
     }

@@ -40,9 +40,12 @@ public class GTOreVeinInfoCategory extends ModularUIRecipeCategory<Holder<OreVei
         super(GTOreVeinInfoWrapper::new);
         IGuiHelper guiHelper = helpers.getGuiHelper();
         this.background = guiHelper.createBlankDrawable(GTOreVeinWidget.width, 120);
+        // raw_iron is an item id, not a block id; the BLOCK registry lookup returned
+        // air, and JEI 19.27+ rejects empty drawable stacks - which killed this whole
+        // plugin (and with it every gtmogs JEI category) at recipe load.
         this.icon = helpers.getGuiHelper()
                 .createDrawableItemStack(
-                        new ItemStack(BuiltInRegistries.BLOCK.get(ResourceLocation.parse("minecraft:raw_iron"))));
+                        new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse("minecraft:raw_iron"))));
     }
 
     public static void registerRecipes(IRecipeRegistration registry) {
