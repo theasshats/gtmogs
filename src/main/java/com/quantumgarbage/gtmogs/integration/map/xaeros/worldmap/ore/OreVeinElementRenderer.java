@@ -1,28 +1,24 @@
 package com.quantumgarbage.gtmogs.integration.map.xaeros.worldmap.ore;
 
-
-import com.quantumgarbage.gtmogs.api.worldgen.ores.GeneratedVeinMetadata;
-import com.quantumgarbage.gtmogs.client.util.DrawUtil;
-import com.quantumgarbage.gtmogs.config.ConfigHolder;
-import com.quantumgarbage.gtmogs.integration.map.GroupingMapRenderer;
-import com.quantumgarbage.gtmogs.integration.map.MapIntegrationUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.InventoryMenu;
-
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.world.level.block.Block;
+
+import com.quantumgarbage.gtmogs.api.worldgen.ores.GeneratedVeinMetadata;
+import com.quantumgarbage.gtmogs.config.ConfigHolder;
+import com.quantumgarbage.gtmogs.integration.map.GroupingMapRenderer;
+import com.quantumgarbage.gtmogs.integration.map.MapIntegrationUtils;
 import xaero.map.element.MapElementReader;
 import xaero.map.element.MapElementRenderProvider;
 import xaero.map.element.MapElementRenderer;
 import xaero.map.graphics.renderer.multitexture.MultiTextureRenderTypeRendererProvider;
 
 public class OreVeinElementRenderer extends
-        MapElementRenderer<OreVeinElement, OreVeinElementContext, OreVeinElementRenderer> {
+                                    MapElementRenderer<OreVeinElement, OreVeinElementContext, OreVeinElementRenderer> {
 
     protected static final ResourceLocation STONE = ResourceLocation.withDefaultNamespace("block/stone");
 
@@ -84,12 +80,7 @@ public class OreVeinElementRenderer extends
 
         Block firstMaterial = vein.definition().value().veinGenerator().getAllBlocks().getFirst().getBlock();
         int color = MapIntegrationUtils.getItemColor(firstMaterial);
-        float[] colors = DrawUtil.floats(color);
-        RenderSystem.setShaderColor(1, 1, 1, 1);
-        var oreSprite = MapIntegrationUtils.getFirstBlockFace(firstMaterial);
-            graphics.blit(-iconSize / 2, -iconSize / 2, 200, iconSize, iconSize,
-                    oreSprite, colors[0], colors[1], colors[2], 1);
-        RenderSystem.setShaderColor(1, 1, 1, 1);
+        MapIntegrationUtils.renderVeinIcon(graphics, firstMaterial, iconSize);
         int borderColor = ConfigHolder.INSTANCE.compat.minimap.getBorderColor(color | 0xFF000000);
         if ((borderColor & 0xFF000000) != 0) {
             int thickness = iconSize / 16;

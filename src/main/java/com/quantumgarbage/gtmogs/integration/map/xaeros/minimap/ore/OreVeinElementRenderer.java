@@ -1,17 +1,14 @@
 package com.quantumgarbage.gtmogs.integration.map.xaeros.minimap.ore;
 
-
-import com.quantumgarbage.gtmogs.api.worldgen.ores.GeneratedVeinMetadata;
-import com.quantumgarbage.gtmogs.client.util.DrawUtil;
-import com.quantumgarbage.gtmogs.config.ConfigHolder;
-import com.quantumgarbage.gtmogs.integration.map.GroupingMapRenderer;
-import com.quantumgarbage.gtmogs.integration.map.MapIntegrationUtils;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
-
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.world.level.block.Block;
+
+import com.quantumgarbage.gtmogs.api.worldgen.ores.GeneratedVeinMetadata;
+import com.quantumgarbage.gtmogs.config.ConfigHolder;
+import com.quantumgarbage.gtmogs.integration.map.GroupingMapRenderer;
+import com.quantumgarbage.gtmogs.integration.map.MapIntegrationUtils;
 import xaero.common.graphics.renderer.multitexture.MultiTextureRenderTypeRendererProvider;
 import xaero.hud.minimap.element.render.MinimapElementRenderInfo;
 import xaero.hud.minimap.element.render.MinimapElementRenderLocation;
@@ -43,28 +40,8 @@ public class OreVeinElementRenderer extends MinimapElementRenderer<OreVeinElemen
 
         Block firstBlock = vein.definition().value().veinGenerator().getAllBlocks().getFirst().getBlock();
         int color = MapIntegrationUtils.getItemColor(firstBlock);
-        float[] colors = DrawUtil.floats(color);
-        var image = MapIntegrationUtils.getFirstBlockFace(firstBlock);
-        RenderSystem.setShaderColor(1, 1, 1, 1);
+        MapIntegrationUtils.renderVeinIcon(graphics, firstBlock, iconSize);
 
-
-            graphics.blit(-iconSize / 2, -iconSize / 2, 0, iconSize, iconSize,
-                    image, colors[0], colors[1], colors[2], 1);
-
-        // FIXME drawing the 2nd layer makes xaero's minimap transparent. so we won't. for now.
-        // oreTexture = MaterialIconType.rawOre.getItemTexturePath(firstMaterial.getMaterialIconSet(), "secondary",
-        // true);
-        // if (oreTexture != null) {
-        // int materialSecondaryARGB = firstMaterial.getMaterialSecondaryARGB();
-        // colors = DrawUtil.floats(materialSecondaryARGB);
-        // var oreSprite = Minecraft.getInstance()
-        // .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-        // .apply(oreTexture);
-        // graphics.blit(-iconSize / 2, -iconSize / 2, 0, iconSize, iconSize,
-        // oreSprite, colors[0], colors[1], colors[2], 1);
-        // }
-
-        RenderSystem.setShaderColor(1, 1, 1, 1);
         int borderColor = ConfigHolder.INSTANCE.compat.minimap.getBorderColor(color | 0xFF000000);
         if ((borderColor & 0xFF000000) != 0) {
             int thickness = iconSize / 16;
