@@ -15,6 +15,12 @@ I have not been able to restore it in this mod, so to use this mod in your pack 
 Personally, I wrote a datagen script in KubeJS based on the OreVeinDefinitionBuilder class in this mod. If someone who knows more about datapack registries and making sure things get registered in the right order sees this and wants to help out, I would ***gladly*** accept a PR that fixes this.
 After a week of slamming my head into this particular issue though I decided to just make a janky workaround and move on. It's worth it for that sweet, sweet GT ore generation though...
 
+> **Fork note:** the disclaimer above still applies — KubeJS *scripting* of veins
+> does not work. What does work, and what this fork's consuming pack uses in
+> production, is plain datapack JSON (including via `kubejs/data/`). A worked
+> example, the field gotchas, and a full in-game testing loop are in
+> **[docs/ADDING-VEINS.md](docs/ADDING-VEINS.md)**.
+
 
 ## Adding GTMOGS as a dependency
 
